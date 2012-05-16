@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -11,7 +12,7 @@ namespace NHibernate.ZMQLogPublisher
         void Shutdown();
         void StartPublisherThread();
         void AssociateWithNHibernate();
-        void ListenAndPublishLogMessages();
+        void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset);
         void ConfigureSocket(Socket socket, SocketConfiguration socketConfig);
     }
 
@@ -20,8 +21,7 @@ namespace NHibernate.ZMQLogPublisher
         private readonly IContext context;
         private readonly IConfiguration configuration;
         private readonly IZmqLoggerFactory _zmqLoggerFactory;
-        private readonly ManualResetEvent threadRunningEvent;
-        private readonly ManualResetEvent threadStoppedEvent;
+        private readonly AutoResetEvent threadRunningEvent;
         private Thread publisherThread;
 
         private bool running;
@@ -38,8 +38,7 @@ namespace NHibernate.ZMQLogPublisher
             this.configuration = configuration;
             this._zmqLoggerFactory = zmqLoggerFactory;
             
-            this.threadRunningEvent = new ManualResetEvent(false);
-            this.threadStoppedEvent = new ManualResetEvent(false);
+            this.threadRunningEvent = new AutoResetEvent(false);
         }
 
         public bool Running
@@ -50,10 +49,9 @@ namespace NHibernate.ZMQLogPublisher
             }
         }
 
-
         public void StartPublisherThread()
         {
-            this.publisherThread = new Thread(() => this.ListenAndPublishLogMessages());
+            this.publisherThread = new Thread(() => this.ListenAndPublishLogMessages(threadRunningEvent));
             this.publisherThread.Start();
 
             this.threadRunningEvent.WaitOne(5000);
@@ -65,7 +63,7 @@ namespace NHibernate.ZMQLogPublisher
             this.stopping = true;
             this.running = false;
 
-            this.threadStoppedEvent.WaitOne();
+            this.threadRunningEvent.WaitOne();
             this.stopping = false;
         }
 
@@ -76,7 +74,7 @@ namespace NHibernate.ZMQLogPublisher
             LoggerProvider.SetLoggersFactory(this._zmqLoggerFactory);
         }
 
-        public void ListenAndPublishLogMessages()
+        public void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset)
         {
             using (Socket publisher = this.context.Socket(SocketType.PUB),
                           loggersSink = this.context.Socket(SocketType.PULL),
@@ -87,9 +85,9 @@ namespace NHibernate.ZMQLogPublisher
                 this.ConfigureSocket(loggersSink, this.configuration.LoggersSinkSocketConfig);
 
                 loggersSink.PollInHandler += (socket, revents) => publisher.Send(socket.Recv());
-
-                this.threadRunningEvent.Set();
-
+                
+                callingThreadReset.Set();
+                
                 byte[] syncMessage = null;
                 // keep waiting for syncMessage before starting to publish
                 // unless we stop before we recieve the sync message
@@ -110,7 +108,7 @@ namespace NHibernate.ZMQLogPublisher
                 }
             }
 
-            this.threadStoppedEvent.Set();
+            callingThreadReset.Set();
             this._zmqLoggerFactory.StopSockets();
         }
 
