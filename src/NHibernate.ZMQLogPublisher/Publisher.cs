@@ -1,38 +1,46 @@
-﻿namespace NHibernate.ZMQLogPublisher
+using System.Collections.Generic;
+using System.Text;
+using System.Threading;
+using ZMQ;
+
+namespace NHibernate.ZMQLogPublisher
 {
-    using System.Collections.Generic;
-    using System.Text;
-    using System.Threading;
-    
-    using ZMQ;
-
-    public class Publisher
+    public interface IPublisher
     {
-        private static Publisher instance;
+        bool Running { get; }
+        void Shutdown();
+        void StartPublisherThread();
+        void AssociateWithNHibernate();
+        void ListenAndPublishLogMessages();
+        void StartLoggersSink(Socket loggers);
+        void ConfigureSocket(Socket socket, SocketConfiguration socketConfig);
+    }
 
-        private Configuration configuration;
-
-        private Context context;
-
-        private ManualResetEvent threadRunningEvent;
-
-        private ManualResetEvent threadStoppedEvent;
-
-        private bool stopping;
-
-        private bool running;
-
+    public class Publisher : IPublisher
+    {
+        private readonly ZMQ.Context context;
+        private readonly IConfiguration configuration;
+        private readonly IZmqLoggerFactory _zmqLoggerFactory;
+        private readonly ManualResetEvent threadRunningEvent;
+        private readonly ManualResetEvent threadStoppedEvent;
         private Thread publisherThread;
 
-        private ZmqLoggerFactory zmqLoggerFactory;
-
-
-        public static Publisher Instance
+        private bool running;
+        private bool stopping;
+        
+        public Publisher(IConfiguration configuration)
+            :this(configuration, new ZMQ.Context(1), new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray()))
         {
-            get
-            {
-                return instance;
-            }
+        }
+
+        public Publisher(IConfiguration configuration, ZMQ.Context context, IZmqLoggerFactory zmqLoggerFactory)
+        {
+            this.context = context;
+            this.configuration = configuration;
+            this._zmqLoggerFactory = zmqLoggerFactory;
+            
+            this.threadRunningEvent = new ManualResetEvent(false);
+            this.threadStoppedEvent = new ManualResetEvent(false);
         }
 
         public bool Running
@@ -43,46 +51,6 @@
             }
         }
 
-        public Publisher(Configuration configuration)
-            :this(configuration, new Context(1))
-        {
-        }
-
-        public Publisher(Configuration configuration, Context context)
-        {
-            this.context = context;
-            this.configuration = configuration;
-            this.zmqLoggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
-            
-            this.threadRunningEvent = new ManualResetEvent(false);
-            this.threadStoppedEvent = new ManualResetEvent(false);
-        }
-
-        public static void Start()
-        {
-            Start(new Publisher(Configuration.LoadDefault()));
-        }
-
-        public static void Start(Publisher configuredInstance)
-        {   
-            instance = configuredInstance;
-            instance.StartPublisherThread();
-            instance.AssociateWithNHibernate();
-        }
-
-        public static void Stop()
-        {
-            instance.Shutdown();
-        }
-
-        public void Shutdown()
-        {
-            this.stopping = true;
-            this.running = false;
-            
-            this.threadStoppedEvent.WaitOne();
-            this.stopping = false;
-        }
 
         public void StartPublisherThread()
         {
@@ -93,23 +61,31 @@
             this.running = true;
         }
 
-        private void AssociateWithNHibernate()
+        public void Shutdown()
         {
-            this.zmqLoggerFactory.Initialize(this.context);
+            this.stopping = true;
+            this.running = false;
 
-            LoggerProvider.SetLoggersFactory(this.zmqLoggerFactory);
+            this.threadStoppedEvent.WaitOne();
+            this.stopping = false;
         }
 
+        public void AssociateWithNHibernate()
+        {
+            this._zmqLoggerFactory.Initialize(this.context);
 
-        private void ListenAndPublishLogMessages()
+            LoggerProvider.SetLoggersFactory(this._zmqLoggerFactory);
+        }
+
+        public void ListenAndPublishLogMessages()
         {
             using (Socket publisher = this.context.Socket(SocketType.PUB),
-                loggersSink = this.context.Socket(SocketType.PULL),
-                syncSocket = this.context.Socket(SocketType.REP))
+                          loggersSink = this.context.Socket(SocketType.PULL),
+                          syncSocket = this.context.Socket(SocketType.REP))
             {
                 this.ConfigureSocket(publisher, this.configuration.PublisherSocketConfig);
                 this.ConfigureSocket(syncSocket, this.configuration.SyncSocketConfig);
-                
+
                 this.StartLoggersSink(loggersSink);
                 loggersSink.PollInHandler += (socket, revents) => publisher.Send(socket.Recv());
 
@@ -124,28 +100,29 @@
                 }
 
                 // send sync confirmation if we recieved a sync request
-                if(syncMessage != null)
+                if (syncMessage != null)
                 {
                     syncSocket.Send(string.Empty, Encoding.Unicode);
                 }
 
                 while (!this.stopping)
                 {
-                    Context.Poller(new List<Socket> { loggersSink, publisher }, 2000);
+                    ZMQ.Context.Poller(new List<Socket> { loggersSink, publisher }, 2000);
                 }
             }
 
             this.threadStoppedEvent.Set();
-            this.zmqLoggerFactory.StopSockets();
+            this._zmqLoggerFactory.StopSockets();
         }
 
-        private void StartLoggersSink(Socket loggers)
+        public void StartLoggersSink(Socket loggers)
         {
             loggers.Linger = 0;
             loggers.Bind(Transport.INPROC, "loggers");
         }
 
-        private void ConfigureSocket(Socket socket, SocketConfiguration socketConfig)
+
+        public void ConfigureSocket(Socket socket, SocketConfiguration socketConfig)
         {
             socket.Bind(socketConfig.Address);
             socket.HWM = socketConfig.HighWaterMark;

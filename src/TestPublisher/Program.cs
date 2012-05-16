@@ -31,13 +31,13 @@ namespace TestPublisher
             using(var sessionFactory = config.BuildSessionFactory())
             {
                 Stopwatch sw = new Stopwatch();
-                Publisher.Start();
+                PublisherFacade.Start();
                 sw.Start();
                 InsertData(sessionFactory);
                 TimeSpan elapsedWithLogging = sw.Elapsed;
 
                 sw.Restart();
-                Publisher.Stop();
+                PublisherFacade.Stop();
                 TimeSpan shutdownTime = sw.Elapsed;
 
                 Console.WriteLine("Completed in: {0}", elapsedWithLogging);

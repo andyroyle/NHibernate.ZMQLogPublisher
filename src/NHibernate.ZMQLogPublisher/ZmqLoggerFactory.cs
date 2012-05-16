@@ -6,7 +6,15 @@ namespace NHibernate.ZMQLogPublisher
 
     using ZMQ;
 
-    public class ZmqLoggerFactory : ILoggerFactory
+    public interface IZmqLoggerFactory : ILoggerFactory
+    {
+        void Initialize(Context ctx);
+        IInternalLogger LoggerFor(string keyName);
+        IInternalLogger LoggerFor(Type type);
+        void StopSockets();
+    }
+
+    public class ZmqLoggerFactory : IZmqLoggerFactory
     {
         private readonly ConcurrentDictionary<string, ZmqLogger> loggers;
 
@@ -41,7 +49,7 @@ namespace NHibernate.ZMQLogPublisher
                 {
                     var logger = new ZmqLogger(keyName, Array.IndexOf(loggersToPublish, keyName) == 0);
 
-                    if (Publisher.Instance.Running)
+                    if (PublisherFacade.IsInstanceRunning)
                     {
                         logger.InitializeWithSocket(this.context.Socket(SocketType.PUSH));
                     }

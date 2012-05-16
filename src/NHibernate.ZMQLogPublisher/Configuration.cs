@@ -2,7 +2,17 @@
 {
     using System.Collections.Generic;
 
-    public class Configuration
+    public interface IConfiguration
+    {
+        SocketConfiguration SyncSocketConfig { get; set; }
+        SocketConfiguration PublisherSocketConfig { get; set; }
+        List<string> LoggersToPublish { get; set; }
+        Configuration AddLoggerKeyToPublish(string key);
+        Configuration ConfigureSyncSocket(System.Action<SocketConfiguration> socketConfigAction);
+        Configuration ConfigurePublisherSocket(System.Action<SocketConfiguration> socketConfigAction);
+    }
+
+    public class Configuration : IConfiguration
     {
         public SocketConfiguration SyncSocketConfig { get; set; }
 
