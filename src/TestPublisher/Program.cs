@@ -21,7 +21,7 @@ namespace TestPublisher
             Console.ReadLine();
             
             var config = new NHibernate.Cfg.Configuration();
-            config.Configure("nh.sqlserver.config");
+            config.Configure("nh.sqlite.config");
             config.SessionFactoryName("Test session factory");
             config.AddAssembly(typeof(Dog).Assembly);
 
@@ -31,13 +31,13 @@ namespace TestPublisher
             using(var sessionFactory = config.BuildSessionFactory())
             {
                 Stopwatch sw = new Stopwatch();
-          //      Publisher.Start();
+                Publisher.Start();
                 sw.Start();
                 InsertData(sessionFactory);
                 TimeSpan elapsedWithLogging = sw.Elapsed;
 
                 sw.Restart();
-            //    Publisher.Stop();
+                Publisher.Stop();
                 TimeSpan shutdownTime = sw.Elapsed;
 
                 Console.WriteLine("Completed in: {0}", elapsedWithLogging);
