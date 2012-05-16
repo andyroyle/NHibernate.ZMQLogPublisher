@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace NHibernate.ZMQLogPublisher
 {
     using ZMQ;
@@ -9,5 +11,7 @@ namespace NHibernate.ZMQLogPublisher
         public ulong HighWaterMark { get; set; }
 
         public int Linger { get; set; }
+
+        public Transport Transport { get; set; }
     }
 }

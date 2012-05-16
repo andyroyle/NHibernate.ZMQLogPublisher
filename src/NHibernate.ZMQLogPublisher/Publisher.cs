@@ -12,13 +12,12 @@ namespace NHibernate.ZMQLogPublisher
         void StartPublisherThread();
         void AssociateWithNHibernate();
         void ListenAndPublishLogMessages();
-        void StartLoggersSink(Socket loggers);
         void ConfigureSocket(Socket socket, SocketConfiguration socketConfig);
     }
 
     public class Publisher : IPublisher
     {
-        private readonly ZMQ.Context context;
+        private readonly IContext context;
         private readonly IConfiguration configuration;
         private readonly IZmqLoggerFactory _zmqLoggerFactory;
         private readonly ManualResetEvent threadRunningEvent;
@@ -29,11 +28,11 @@ namespace NHibernate.ZMQLogPublisher
         private bool stopping;
         
         public Publisher(IConfiguration configuration)
-            :this(configuration, new ZMQ.Context(1), new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray()))
+            :this(configuration, new ContextWrapper(new ZMQ.Context(1)), new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray()))
         {
         }
 
-        public Publisher(IConfiguration configuration, ZMQ.Context context, IZmqLoggerFactory zmqLoggerFactory)
+        public Publisher(IConfiguration configuration, IContext context, IZmqLoggerFactory zmqLoggerFactory)
         {
             this.context = context;
             this.configuration = configuration;
@@ -85,8 +84,8 @@ namespace NHibernate.ZMQLogPublisher
             {
                 this.ConfigureSocket(publisher, this.configuration.PublisherSocketConfig);
                 this.ConfigureSocket(syncSocket, this.configuration.SyncSocketConfig);
+                this.ConfigureSocket(loggersSink, this.configuration.LoggersSinkSocketConfig);
 
-                this.StartLoggersSink(loggersSink);
                 loggersSink.PollInHandler += (socket, revents) => publisher.Send(socket.Recv());
 
                 this.threadRunningEvent.Set();
@@ -107,7 +106,7 @@ namespace NHibernate.ZMQLogPublisher
 
                 while (!this.stopping)
                 {
-                    ZMQ.Context.Poller(new List<Socket> { loggersSink, publisher }, 2000);
+                    this.context.Poller(new List<Socket> { loggersSink, publisher }, 2000);
                 }
             }
 
@@ -115,16 +114,9 @@ namespace NHibernate.ZMQLogPublisher
             this._zmqLoggerFactory.StopSockets();
         }
 
-        public void StartLoggersSink(Socket loggers)
-        {
-            loggers.Linger = 0;
-            loggers.Bind(Transport.INPROC, "loggers");
-        }
-
-
         public void ConfigureSocket(Socket socket, SocketConfiguration socketConfig)
         {
-            socket.Bind(socketConfig.Address);
+            socket.Bind(socketConfig.Transport, socketConfig.Address);
             socket.HWM = socketConfig.HighWaterMark;
             socket.Linger = socketConfig.Linger;
         }

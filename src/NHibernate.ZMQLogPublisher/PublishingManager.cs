@@ -2,9 +2,9 @@
 {
     using ZMQ;
 
-    public class PublisherFacade
+    public class PublishingManager
     {
-        private static Publisher instance;
+        private static IPublisher instance;
         
         public static bool IsInstanceRunning
         {
@@ -19,7 +19,7 @@
             Start(new Publisher(Configuration.LoadDefault()));
         }
 
-        public static void Start(Publisher configuredInstance)
+        public static void Start(IPublisher configuredInstance)
         {   
             instance = configuredInstance;
             instance.StartPublisherThread();

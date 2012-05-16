@@ -65,13 +65,13 @@
         public void WorksWithInprocSubscribers()
         {
 
-            Context context = new Context(1);
+            var context = new ContextWrapper(new Context(1));
 
             IConfiguration configuration = Configuration.LoadDefault()
                 .ConfigurePublisherSocket(s => s.Address = "inproc://publisher")
                 .ConfigureSyncSocket(s => s.Address = "inproc://sync");
             
-            PublisherFacade.Start(new Publisher(configuration, context, new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray())));
+            PublishingManager.Start(new Publisher(configuration, context, new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray())));
 
             this.subscriberTask = new Task(() => this.StartSubscriber(1, "inproc://publisher", "inproc://sync", context));
             this.subscriberTask.Start(); // start subscriber to listen to messages
@@ -81,7 +81,7 @@
             this.OpenSessionAndSaveDogWithChild();
             this.subscriberTask.Wait(); // wait until subscriber finished
 
-            PublisherFacade.Stop();
+            PublishingManager.Stop();
 
             Assert.AreEqual(1, this.recievedMessages.Count(m => m.Contains("opened session")), "Did not recieve session opened message for all sessions.");
         }
@@ -89,7 +89,7 @@
         [Test]
         public void OpeningMultipleSessionsInDifferentThreads()
         {
-            PublisherFacade.Start();
+            PublishingManager.Start();
 
             int expectedSessions = 10;
             this.StartSubscriberThread(expectedSessions);
@@ -103,7 +103,7 @@
 
             Task.WaitAll(tasks);
 
-            PublisherFacade.Stop();
+            PublishingManager.Stop();
             this.subscriberTask.Wait(); // wait until subscriber finished
 
             Assert.AreEqual(expectedSessions, this.recievedMessages.Count(m => m.Contains("opened session")), "Did not recieve session opened message for all sessions.");
@@ -112,14 +112,14 @@
         [Test]
         public void OpeningSessionPublishesEvent()
         {
-            PublisherFacade.Start();
+            PublishingManager.Start();
             
             this.StartSubscriberThread(1);
 
             this.OpenSessionAndSaveDogWithChild();
             this.subscriberTask.Wait(); // wait until subscriber finished
 
-            PublisherFacade.Stop();
+            PublishingManager.Stop();
 
             Assert.AreEqual(1, this.recievedMessages.Count(m => m.Contains("opened session")), "Did not recieve session opened message for all sessions.");
         }
@@ -129,9 +129,9 @@
         {
             AssertNoExceptionThrown(() =>
             {   
-                PublisherFacade.Start();
+                PublishingManager.Start();
                 OpenSessionAndSaveDogWithChild();
-                PublisherFacade.Stop();
+                PublishingManager.Stop();
 
                 OpenSessionAndSaveDogWithChild();
                 OpenSessionAndSave(
@@ -156,7 +156,7 @@
 
         private void StartSubscriberThread(int expectedSessions)
         {
-            this.subscriberTask = new Task(() => this.StartSubscriber(expectedSessions, "tcp://localhost:68748", "tcp://localhost:68747", new Context(1)));
+            this.subscriberTask = new Task(() => this.StartSubscriber(expectedSessions, "tcp://localhost:68748", "tcp://localhost:68747", new ContextWrapper(new Context(1))));
             this.subscriberTask.Start(); // start subscriber to listen to messages
 
             this.subscriberReadyEvent.WaitOne(5000);
@@ -200,7 +200,7 @@
             }
         }
 
-        private void StartSubscriber(int expectedSessions, string publisherAddress, string syncAddress, Context context)
+        private void StartSubscriber(int expectedSessions, string publisherAddress, string syncAddress, IContext context)
         {
             this.recievedMessages.Clear();
             

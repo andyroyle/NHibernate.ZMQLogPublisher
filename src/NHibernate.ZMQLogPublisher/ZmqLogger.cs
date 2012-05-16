@@ -161,13 +161,13 @@ namespace NHibernate.ZMQLogPublisher
 
         private void SendMessageToPublisher(string message, Exception exception)
         {
-            if (PublisherFacade.IsInstanceRunning)
+            if (PublishingManager.IsInstanceRunning)
             {
                 var serializedLogDetails = this.GetSerializedLogDetails(message, exception);
 
                 lock (this.socketLock)
                 {
-                    if (PublisherFacade.IsInstanceRunning)
+                    if (PublishingManager.IsInstanceRunning)
                     {
                         this.sender.Send(serializedLogDetails, Encoding.Unicode);
                     }

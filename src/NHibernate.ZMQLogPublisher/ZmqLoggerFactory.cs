@@ -8,7 +8,7 @@ namespace NHibernate.ZMQLogPublisher
 
     public interface IZmqLoggerFactory : ILoggerFactory
     {
-        void Initialize(Context ctx);
+        void Initialize(IContext ctx);
         IInternalLogger LoggerFor(string keyName);
         IInternalLogger LoggerFor(Type type);
         void StopSockets();
@@ -20,7 +20,7 @@ namespace NHibernate.ZMQLogPublisher
 
         private readonly string[] loggersToPublish;
 
-        private Context context;
+        private IContext context;
 
         public ZmqLoggerFactory(string[] loggersToPublish)
         {
@@ -28,7 +28,7 @@ namespace NHibernate.ZMQLogPublisher
             this.loggersToPublish = loggersToPublish;
         }
 
-        public void Initialize(Context ctx)
+        public void Initialize(IContext ctx)
         {
             this.context = ctx;
 
@@ -49,7 +49,7 @@ namespace NHibernate.ZMQLogPublisher
                 {
                     var logger = new ZmqLogger(keyName, Array.IndexOf(loggersToPublish, keyName) == 0);
 
-                    if (PublisherFacade.IsInstanceRunning)
+                    if (PublishingManager.IsInstanceRunning)
                     {
                         logger.InitializeWithSocket(this.context.Socket(SocketType.PUSH));
                     }
