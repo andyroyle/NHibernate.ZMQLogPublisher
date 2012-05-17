@@ -97,7 +97,8 @@ Global
 		{924E2C53-718B-4FDB-8074-FC61B7D1446D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{924E2C53-718B-4FDB-8074-FC61B7D1446D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{924E2C53-718B-4FDB-8074-FC61B7D1446D}.Release|x64.ActiveCfg = Release|Any CPU
-		{924E2C53-718B-4FDB-8074-FC61B7D1446D}.Release|x86.ActiveCfg = Release|Any CPU
+		{924E2C53-718B-4FDB-8074-FC61B7D1446D}.Release|x86.ActiveCfg = Release|x86
+		{924E2C53-718B-4FDB-8074-FC61B7D1446D}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

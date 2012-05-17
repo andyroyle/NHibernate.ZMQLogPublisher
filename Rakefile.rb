@@ -13,7 +13,7 @@ assemblyinfo :assemblyinfo => ["version:set_values"] do |asm|
   asm.output_file = 'src/CommonAssemblyInfo.cs'
 end
 
-desc "Run a sample build using the MSBuildTask"
+desc "build"
 msbuild :msbuild do |msb|
   msb.properties = { :configuration => "Release" , :platform => "x86", :outdir => File.join(File.dirname(__FILE__), "output/") }
   msb.targets = [ :Clean, :Build ]
@@ -21,4 +21,10 @@ msbuild :msbuild do |msb|
   msb.log_level = :verbose
 end
 
-task :default  => ["assemblyinfo", "msbuild"]
+task :default  => ["assemblyinfo", "msbuild", "mspec"]
+
+desc 'run specifications'
+mspec :mspec do |mspec|
+	mspec.command = "src/packages/Machine.Specifications.0.5.2.0/tools/mspec-x86-clr4.exe"
+	mspec.assemblies "output/UnitTests.dll"
+end
