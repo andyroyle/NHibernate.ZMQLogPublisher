@@ -15,12 +15,14 @@ namespace NHibernate.ZMQLogPublisher
         private readonly IContext _context;
         private readonly IConfiguration _configuration;
         private readonly IZmqLoggerFactory _zmqLoggerFactory;
+        private readonly ISocketConfigurer _socketConfigurer;
 
-        public LoggerListener(IContext context, IConfiguration configuration, IZmqLoggerFactory zmqLoggerFactory)
+        public LoggerListener(IContext context, IConfiguration configuration, IZmqLoggerFactory zmqLoggerFactory, ISocketConfigurer socketConfigurer)
         {
             _context = context;
             _configuration = configuration;
             _zmqLoggerFactory = zmqLoggerFactory;
+            _socketConfigurer = socketConfigurer;
         }
 
         public void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset, ref bool stopping)
@@ -29,7 +31,7 @@ namespace NHibernate.ZMQLogPublisher
                           loggersSink = _context.Socket(SocketType.PULL),
                           syncSocket = _context.Socket(SocketType.REP))
             {
-                ConfigureSockets(new Dictionary<Socket, SocketConfiguration>(){
+                _socketConfigurer.ConfigureSockets(new Dictionary<Socket, SocketConfiguration>(){
                     {publisher, _configuration.PublisherSocketConfig},
                     {syncSocket, _configuration.SyncSocketConfig},
                     {loggersSink, _configuration.LoggersSinkSocketConfig}
@@ -37,6 +39,7 @@ namespace NHibernate.ZMQLogPublisher
 
                 loggersSink.PollInHandler += (socket, revents) => publisher.Send(socket.Recv());
 
+                // tells the caller that the thread has started properly
                 callingThreadReset.Set();
 
                 Synchronise(stopping, syncSocket);
@@ -66,21 +69,6 @@ namespace NHibernate.ZMQLogPublisher
             {
                 syncSocket.Send(string.Empty, Encoding.Unicode);
             }
-        }
-
-        private void ConfigureSockets(IEnumerable<KeyValuePair<Socket, SocketConfiguration>> toConfigure)
-        {
-            foreach (var pair in toConfigure)
-            {
-                ConfigureSocket(pair.Key, pair.Value);
-            }
-        }
-
-        private void ConfigureSocket(Socket socket, SocketConfiguration socketConfig)
-        {
-            socket.Bind(socketConfig.Transport, socketConfig.Address);
-            socket.HWM = socketConfig.HighWaterMark;
-            socket.Linger = socketConfig.Linger;
         }
     }
 }

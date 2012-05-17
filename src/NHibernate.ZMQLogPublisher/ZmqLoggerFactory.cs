@@ -2,8 +2,6 @@ namespace NHibernate.ZMQLogPublisher
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Diagnostics;
-
     using ZMQ;
 
     public interface IZmqLoggerFactory : ILoggerFactory

@@ -73,6 +73,7 @@
     <Compile Include="PublishingManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketConfiguration.cs" />
+    <Compile Include="SocketConfigurer.cs" />
     <Compile Include="ZmqLogger.cs" />
     <Compile Include="ZmqLoggerFactory.cs" />
   </ItemGroup>

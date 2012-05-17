@@ -67,12 +67,14 @@
 
             var context = new ContextWrapper(new Context(1));
 
-            IConfiguration configuration = Configuration.LoadDefault()
+            var configuration = Configuration.LoadDefault()
                 .ConfigurePublisherSocket(s => s.Address = "inproc://publisher")
                 .ConfigureSyncSocket(s => s.Address = "inproc://sync");
             
             var zmqLoggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
-            var loggerListener = new LoggerListener(context, configuration, zmqLoggerFactory);
+            var socketConfigurer = new SocketConfigurer();
+
+            var loggerListener = new LoggerListener(context, configuration, zmqLoggerFactory, socketConfigurer);
 
             PublishingManager.Start(new Publisher(context, zmqLoggerFactory, loggerListener));
 

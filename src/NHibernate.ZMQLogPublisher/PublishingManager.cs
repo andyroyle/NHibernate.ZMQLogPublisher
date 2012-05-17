@@ -1,7 +1,5 @@
 ﻿namespace NHibernate.ZMQLogPublisher
 {
-    using ZMQ;
-
     public class PublishingManager
     {
         private static IPublisher instance;
@@ -14,12 +12,13 @@
             }
         }
 
-      public static void Start()
+        public static void Start()
         {
             var context = new ContextWrapper(new ZMQ.Context(1));
             var configuration = Configuration.LoadDefault();
             var loggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
-            var loggerListener = new LoggerListener(context, configuration, loggerFactory);  
+            var socketConfigurer = new SocketConfigurer();
+            var loggerListener = new LoggerListener(context, configuration, loggerFactory, socketConfigurer);  
 
             Start(new Publisher(context, loggerFactory, loggerListener));
         }
