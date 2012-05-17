@@ -68,6 +68,7 @@
     <Compile Include="Configuration.cs" />
     <Compile Include="ContextWrapper.cs" />
     <Compile Include="LogDetails.cs" />
+    <Compile Include="LoggerListener.cs" />
     <Compile Include="Publisher.cs" />
     <Compile Include="PublishingManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

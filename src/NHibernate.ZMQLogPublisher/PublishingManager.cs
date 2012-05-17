@@ -16,7 +16,12 @@
 
       public static void Start()
         {
-            Start(new Publisher(Configuration.LoadDefault()));
+            var context = new ContextWrapper(new ZMQ.Context(1));
+            var configuration = Configuration.LoadDefault();
+            var loggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
+            var loggerListener = new LoggerListener(context, configuration, loggerFactory);  
+
+            Start(new Publisher(context, loggerFactory, loggerListener));
         }
 
         public static void Start(IPublisher configuredInstance)

@@ -71,7 +71,10 @@
                 .ConfigurePublisherSocket(s => s.Address = "inproc://publisher")
                 .ConfigureSyncSocket(s => s.Address = "inproc://sync");
             
-            PublishingManager.Start(new Publisher(configuration, context, new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray())));
+            var zmqLoggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
+            var loggerListener = new LoggerListener(context, configuration, zmqLoggerFactory);
+
+            PublishingManager.Start(new Publisher(context, zmqLoggerFactory, loggerListener));
 
             this.subscriberTask = new Task(() => this.StartSubscriber(1, "inproc://publisher", "inproc://sync", context));
             this.subscriberTask.Start(); // start subscriber to listen to messages
