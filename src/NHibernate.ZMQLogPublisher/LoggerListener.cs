@@ -7,7 +7,7 @@ namespace NHibernate.ZMQLogPublisher
 {
     public interface ILoggerListener
     {
-        void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset, bool stopping);
+        void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset, ref bool stopping);
     }
 
     public class LoggerListener : ILoggerListener
@@ -23,7 +23,7 @@ namespace NHibernate.ZMQLogPublisher
             _zmqLoggerFactory = zmqLoggerFactory;
         }
 
-        public void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset, bool stopping)
+        public void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset, ref bool stopping)
         {
             using (Socket publisher = _context.Socket(SocketType.PUB),
                           loggersSink = _context.Socket(SocketType.PULL),
@@ -39,19 +39,7 @@ namespace NHibernate.ZMQLogPublisher
 
                 callingThreadReset.Set();
 
-                byte[] syncMessage = null;
-                // keep waiting for syncMessage before starting to publish
-                // unless we stop before we recieve the sync message
-                while (!stopping && syncMessage == null)
-                {
-                    syncMessage = syncSocket.Recv(SendRecvOpt.NOBLOCK);
-                }
-
-                // send sync confirmation if we recieved a sync request
-                if (syncMessage != null)
-                {
-                    syncSocket.Send(string.Empty, Encoding.Unicode);
-                }
+                Synchronise(stopping, syncSocket);
 
                 while (!stopping)
                 {
@@ -61,6 +49,23 @@ namespace NHibernate.ZMQLogPublisher
 
             callingThreadReset.Set();
             _zmqLoggerFactory.StopSockets();
+        }
+
+        private static void Synchronise(bool stopping, Socket syncSocket)
+        {
+            byte[] syncMessage = null;
+            // keep waiting for syncMessage before starting to publish
+            // unless we stop before we recieve the sync message
+            while (!stopping && syncMessage == null)
+            {
+                syncMessage = syncSocket.Recv(SendRecvOpt.NOBLOCK);
+            }
+
+            // send sync confirmation if we recieved a sync request
+            if (syncMessage != null)
+            {
+                syncSocket.Send(string.Empty, Encoding.Unicode);
+            }
         }
 
         private void ConfigureSockets(IEnumerable<KeyValuePair<Socket, SocketConfiguration>> toConfigure)

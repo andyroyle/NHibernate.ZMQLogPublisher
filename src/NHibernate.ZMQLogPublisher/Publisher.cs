@@ -34,7 +34,7 @@ namespace NHibernate.ZMQLogPublisher
 
         public void StartPublisherThread()
         {
-            _publisherThread = new Thread(() => _loggerListener.ListenAndPublishLogMessages(_threadStateChangedEvent, this._stopping));
+            _publisherThread = new Thread(() => _loggerListener.ListenAndPublishLogMessages(_threadStateChangedEvent, ref this._stopping));
             _publisherThread.Start();
 
             _threadStateChangedEvent.WaitOne(5000);
