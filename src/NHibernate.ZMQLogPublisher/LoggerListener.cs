@@ -42,7 +42,7 @@ namespace NHibernate.ZMQLogPublisher
                 // tells the caller that the thread has started properly
                 callingThreadReset.Set();
 
-                Synchronise(stopping, syncSocket);
+                Synchronise(syncSocket, ref stopping);
 
                 while (!stopping)
                 {
@@ -54,7 +54,7 @@ namespace NHibernate.ZMQLogPublisher
             _zmqLoggerFactory.StopSockets();
         }
 
-        private static void Synchronise(bool stopping, Socket syncSocket)
+        private static void Synchronise(Socket syncSocket, ref bool stopping)
         {
             byte[] syncMessage = null;
             // keep waiting for syncMessage before starting to publish
