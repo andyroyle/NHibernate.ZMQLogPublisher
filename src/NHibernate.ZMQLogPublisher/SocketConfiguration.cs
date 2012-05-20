@@ -1,5 +1,3 @@
-using System.Net;
-
 namespace NHibernate.ZMQLogPublisher
 {
     using ZMQ;
@@ -13,5 +11,7 @@ namespace NHibernate.ZMQLogPublisher
         public int Linger { get; set; }
 
         public Transport Transport { get; set; }
+
+        public SocketType Type { get; set; }
     }
 }

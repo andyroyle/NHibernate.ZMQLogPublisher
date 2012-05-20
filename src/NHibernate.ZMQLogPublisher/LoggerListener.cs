@@ -15,28 +15,22 @@ namespace NHibernate.ZMQLogPublisher
         private readonly IContext _context;
         private readonly IConfiguration _configuration;
         private readonly IZmqLoggerFactory _zmqLoggerFactory;
-        private readonly ISocketConfigurer _socketConfigurer;
+        private readonly ISocketConfigurer _socketFactory;
 
-        public LoggerListener(IContext context, IConfiguration configuration, IZmqLoggerFactory zmqLoggerFactory, ISocketConfigurer socketConfigurer)
+        public LoggerListener(IContext context, IConfiguration configuration, IZmqLoggerFactory zmqLoggerFactory, ISocketConfigurer socketFactory)
         {
             _context = context;
             _configuration = configuration;
             _zmqLoggerFactory = zmqLoggerFactory;
-            _socketConfigurer = socketConfigurer;
+            _socketFactory = socketFactory;
         }
 
         public void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset, ref bool stopping)
         {
-            using (Socket publisher = _context.Socket(SocketType.PUB),
-                          loggersSink = _context.Socket(SocketType.PULL),
-                          syncSocket = _context.Socket(SocketType.REP))
+            using (Socket publisher = _socketFactory.GetSocket(_configuration.PublisherSocketConfig),
+                          loggersSink = _socketFactory.GetSocket(_configuration.LoggersSinkSocketConfig),
+                          syncSocket = _socketFactory.GetSocket(_configuration.SyncSocketConfig))
             {
-                _socketConfigurer.ConfigureSockets(new Dictionary<Socket, SocketConfiguration>(){
-                    {publisher, _configuration.PublisherSocketConfig},
-                    {syncSocket, _configuration.SyncSocketConfig},
-                    {loggersSink, _configuration.LoggersSinkSocketConfig}
-                });
-
                 loggersSink.PollInHandler += (socket, revents) => publisher.Send(socket.Recv());
 
                 // tells the caller that the thread has started properly

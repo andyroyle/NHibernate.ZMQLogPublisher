@@ -17,7 +17,7 @@
             var context = new ContextWrapper(new ZMQ.Context(1));
             var configuration = Configuration.LoadDefault();
             var loggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
-            var socketConfigurer = new SocketConfigurer();
+            var socketConfigurer = new SocketFactory(context);
             var loggerListener = new LoggerListener(context, configuration, loggerFactory, socketConfigurer);  
 
             Start(new Publisher(context, loggerFactory, loggerListener));

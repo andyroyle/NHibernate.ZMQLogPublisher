@@ -1,4 +1,5 @@
-﻿using ZMQ;
+﻿using System;
+using ZMQ;
 
 namespace NHibernate.ZMQLogPublisher
 {
@@ -15,6 +16,7 @@ namespace NHibernate.ZMQLogPublisher
         Configuration AddLoggerKeyToPublish(string key);
         Configuration ConfigureSyncSocket(System.Action<SocketConfiguration> socketConfigAction);
         Configuration ConfigurePublisherSocket(System.Action<SocketConfiguration> socketConfigAction);
+        Configuration ConfigureLoggersSyncSocket(System.Action<SocketConfiguration> socketConfigAction);
     }
 
     public class Configuration : IConfiguration
@@ -28,9 +30,9 @@ namespace NHibernate.ZMQLogPublisher
         public static Configuration LoadDefault()
         {
             var config = new Configuration();
-            config.SyncSocketConfig = new SocketConfiguration { Address = "*:68747", Transport = Transport.TCP};
-            config.PublisherSocketConfig = new SocketConfiguration { Address = "*:68748", Transport = Transport.TCP };
-            config.LoggersSinkSocketConfig = new SocketConfiguration {Address = "loggers", Transport = Transport.INPROC };
+            config.SyncSocketConfig = new SocketConfiguration { Address = "*:68747", Transport = Transport.TCP, Type = SocketType.REP};
+            config.PublisherSocketConfig = new SocketConfiguration { Address = "*:68748", Transport = Transport.TCP, Type = SocketType.PUB};
+            config.LoggersSinkSocketConfig = new SocketConfiguration {Address = "loggers", Transport = Transport.INPROC, Type = SocketType.PULL};
 
             config.LoggersToPublish = new List<string>
             { 
@@ -65,7 +67,7 @@ namespace NHibernate.ZMQLogPublisher
             return this;
         }
 
-        public Configuration ConfigureSinkSocket(System.Action<SocketConfiguration> socketConfigAction)
+        public Configuration ConfigureLoggersSyncSocket(Action<SocketConfiguration> socketConfigAction)
         {
             socketConfigAction(this.LoggersSinkSocketConfig);
 

@@ -68,11 +68,13 @@
             var context = new ContextWrapper(new Context(1));
 
             var configuration = Configuration.LoadDefault()
-                .ConfigurePublisherSocket(s => s.Address = "inproc://publisher")
-                .ConfigureSyncSocket(s => s.Address = "inproc://sync");
-            
+                .ConfigurePublisherSocket(s => s.Address = "publisher")
+                .ConfigurePublisherSocket(s => s.Transport = Transport.INPROC)
+                .ConfigureSyncSocket(s => s.Address = "sync")
+                .ConfigureSyncSocket(s => s.Transport = Transport.INPROC);
+                
             var zmqLoggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
-            var socketConfigurer = new SocketConfigurer();
+            var socketConfigurer = new SocketFactory(context);
 
             var loggerListener = new LoggerListener(context, configuration, zmqLoggerFactory, socketConfigurer);
 
