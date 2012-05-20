@@ -67,6 +67,7 @@
     </Compile>
     <Compile Include="Configuration.cs" />
     <Compile Include="ContextWrapper.cs" />
+    <Compile Include="SubscriberManager.cs" />
     <Compile Include="LogDetails.cs" />
     <Compile Include="LoggerListener.cs" />
     <Compile Include="Publisher.cs" />

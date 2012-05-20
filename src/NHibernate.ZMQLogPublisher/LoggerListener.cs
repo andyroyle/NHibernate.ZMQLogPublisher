@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text;
 using ZMQ;
 using System.Threading;
 
@@ -13,30 +12,28 @@ namespace NHibernate.ZMQLogPublisher
     public class LoggerListener : ILoggerListener
     {
         private readonly IContext _context;
-        private readonly IConfiguration _configuration;
         private readonly IZmqLoggerFactory _zmqLoggerFactory;
         private readonly ISocketConfigurer _socketFactory;
+        private readonly ISubscriberManager _subscriberManager;
 
-        public LoggerListener(IContext context, IConfiguration configuration, IZmqLoggerFactory zmqLoggerFactory, ISocketConfigurer socketFactory)
+        public LoggerListener(IContext context, IZmqLoggerFactory zmqLoggerFactory, ISocketConfigurer socketFactory, ISubscriberManager subscriberManager)
         {
             _context = context;
-            _configuration = configuration;
             _zmqLoggerFactory = zmqLoggerFactory;
             _socketFactory = socketFactory;
+            _subscriberManager = subscriberManager;
         }
 
         public void ListenAndPublishLogMessages(AutoResetEvent callingThreadReset, ref bool stopping)
         {
-            using (Socket publisher = _socketFactory.GetSocket(_configuration.PublisherSocketConfig),
-                          loggersSink = _socketFactory.GetSocket(_configuration.LoggersSinkSocketConfig),
-                          syncSocket = _socketFactory.GetSocket(_configuration.SyncSocketConfig))
+            using (Socket publisher = _socketFactory.GetPublisherSocket(),
+                          loggersSink = _socketFactory.GetLoggersSinkSocket(),
+                          syncSocket = _socketFactory.GetSyncSocket())
             {
                 loggersSink.PollInHandler += (socket, revents) => publisher.Send(socket.Recv());
-
-                // tells the caller that the thread has started properly
                 callingThreadReset.Set();
 
-                Synchronise(syncSocket, ref stopping);
+                _subscriberManager.Synchronise(syncSocket, ref stopping);
 
                 while (!stopping)
                 {
@@ -46,23 +43,6 @@ namespace NHibernate.ZMQLogPublisher
 
             callingThreadReset.Set();
             _zmqLoggerFactory.StopSockets();
-        }
-
-        private static void Synchronise(Socket syncSocket, ref bool stopping)
-        {
-            byte[] syncMessage = null;
-            // keep waiting for syncMessage before starting to publish
-            // unless we stop before we recieve the sync message
-            while (!stopping && syncMessage == null)
-            {
-                syncMessage = syncSocket.Recv(SendRecvOpt.NOBLOCK);
-            }
-
-            // send sync confirmation if we recieved a sync request
-            if (syncMessage != null)
-            {
-                syncSocket.Send(string.Empty, Encoding.Unicode);
-            }
         }
     }
 }

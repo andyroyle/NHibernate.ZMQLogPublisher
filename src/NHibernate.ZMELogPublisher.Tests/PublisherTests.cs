@@ -74,9 +74,9 @@
                 .ConfigureSyncSocket(s => s.Transport = Transport.INPROC);
                 
             var zmqLoggerFactory = new ZmqLoggerFactory(configuration.LoggersToPublish.ToArray());
-            var socketConfigurer = new SocketFactory(context);
-
-            var loggerListener = new LoggerListener(context, configuration, zmqLoggerFactory, socketConfigurer);
+            var socketConfigurer = new SocketFactory(context, configuration);
+            var subscriberManager = new SubscriberManager();
+            var loggerListener = new LoggerListener(context, zmqLoggerFactory, socketConfigurer, subscriberManager);
 
             PublishingManager.Start(new Publisher(context, zmqLoggerFactory, loggerListener));
 
