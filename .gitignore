@@ -24,3 +24,4 @@ StyleCop.Cache
 src/CommonAssemblyInfo.cs
 _rltm*
 output
+TestResult.xml
