@@ -83,6 +83,7 @@
     <Compile Include="PublisherSpecs.cs" />
     <Compile Include="PublishingManagerSpecs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SocketFactorySpecs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

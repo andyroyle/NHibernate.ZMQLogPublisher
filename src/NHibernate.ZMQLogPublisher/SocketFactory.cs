@@ -7,6 +7,7 @@ namespace NHibernate.ZMQLogPublisher
         Socket GetPublisherSocket();
         Socket GetLoggersSinkSocket();
         Socket GetSyncSocket();
+        Socket GetConfiguredSocket(SocketConfiguration configuration);
     }
 
     public class SocketFactory : ISocketConfigurer
@@ -35,7 +36,7 @@ namespace NHibernate.ZMQLogPublisher
             return GetConfiguredSocket(_configuration.SyncSocketConfig);
         }
 
-        private Socket GetConfiguredSocket(SocketConfiguration configuration)
+        public Socket GetConfiguredSocket(SocketConfiguration configuration)
         {
             return ConfigureSocket(_context.Socket(configuration.Type), configuration);
         }
