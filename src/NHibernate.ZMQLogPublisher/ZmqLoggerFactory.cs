@@ -10,13 +10,14 @@ namespace NHibernate.ZMQLogPublisher
         IInternalLogger LoggerFor(string keyName);
         IInternalLogger LoggerFor(Type type);
         void StopSockets();
+        string[] loggersToPublish { get; }
     }
 
     public class ZmqLoggerFactory : IZmqLoggerFactory
     {
         private readonly ConcurrentDictionary<string, ZmqLogger> loggers;
 
-        private readonly string[] loggersToPublish;
+        public string[] loggersToPublish { get; private set; }
 
         private IContext context;
 
@@ -45,7 +46,7 @@ namespace NHibernate.ZMQLogPublisher
                 keyName,
                 key =>
                 {
-                    var logger = new ZmqLogger(keyName, Array.IndexOf(loggersToPublish, keyName) == 0);
+                    var logger = new ZmqLogger(keyName, Array.IndexOf(loggersToPublish, keyName) == -1);
 
                     if (PublishingManager.IsInstanceRunning)
                     {

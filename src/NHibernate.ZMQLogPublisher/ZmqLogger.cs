@@ -1,3 +1,5 @@
+using System;
+
 namespace NHibernate.ZMQLogPublisher
 {
     using System.Text;

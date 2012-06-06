@@ -21,10 +21,17 @@ msbuild :msbuild do |msb|
   msb.log_level = :verbose
 end
 
-task :default  => ["assemblyinfo", "msbuild", "mspec"]
+task :default  => ["assemblyinfo", "msbuild", "mspec", "nunit"]
 
 desc 'run specifications'
 mspec :mspec do |mspec|
 	mspec.command = "src/packages/Machine.Specifications.0.5.2.0/tools/mspec-x86-clr4.exe"
 	mspec.assemblies "output/UnitTests.dll"
+end
+
+desc 'run nunit'
+nunit :nunit do |nunit|
+	nunit.command = "src/packages/NUnit.Runners.2.6.0.12051/tools/nunit-console-x86.exe"
+	nunit.assemblies "output/NHibernate.ZMELogPublisher.Tests.dll"
+	nunit.options "/framework:net-4.0"
 end

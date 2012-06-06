@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Threading;
 
 namespace NHibernate.ZMQLogPublisher
@@ -53,7 +54,21 @@ namespace NHibernate.ZMQLogPublisher
         public void AssociateWithNHibernate()
         {
             _zmqLoggerFactory.Initialize(_context);
+            
             LoggerProvider.SetLoggersFactory(_zmqLoggerFactory);
+
+            foreach (var loggerName in _zmqLoggerFactory.loggersToPublish)
+            {
+                var logger = Assembly.Load("NHibernate").GetType(loggerName);
+
+                if (loggerName == "NHibernate.SQL")
+                    logger = Assembly.Load("NHibernate").GetType("NHibernate.AdoNet.Util.SqlStatementLogger");
+
+                if(logger == null) continue;
+                var field = logger.GetField("log", BindingFlags.Static | BindingFlags.NonPublic);
+                
+                field.SetValue(null, _zmqLoggerFactory.LoggerFor(loggerName));
+            }
         }
     }
 }
