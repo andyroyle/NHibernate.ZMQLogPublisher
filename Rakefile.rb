@@ -33,5 +33,5 @@ desc 'run nunit'
 nunit :nunit do |nunit|
 	nunit.command = "src/packages/NUnit.Runners.2.6.0.12051/tools/nunit-console-x86.exe"
 	nunit.assemblies "output/NHibernate.ZMELogPublisher.Tests.dll"
-	nunit.options "/framework:net-4.0"
+	nunit.options "/framework:net-4.0", "/process:Multiple"
 end
