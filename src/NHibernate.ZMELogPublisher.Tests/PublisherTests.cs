@@ -109,7 +109,7 @@
         }
 
         [Test]
-        public void X_OpeningMultipleSessionsInDifferentThreads()
+        public void OpeningMultipleSessionsInDifferentThreads()
         {
             PublishingManager.Start();
 
