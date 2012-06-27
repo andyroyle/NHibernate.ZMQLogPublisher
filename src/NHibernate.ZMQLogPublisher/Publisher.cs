@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -57,17 +58,13 @@ namespace NHibernate.ZMQLogPublisher
             
             LoggerProvider.SetLoggersFactory(_zmqLoggerFactory);
 
-            foreach (var loggerName in _zmqLoggerFactory.loggersToPublish)
+            var assembly = Assembly.Load("NHibernate");
+
+            foreach (var field in assembly.GetTypes()
+                .SelectMany(x => x.GetFields(BindingFlags.Static | BindingFlags.NonPublic)
+                    .Where(c => c.FieldType == typeof(IInternalLogger))))
             {
-                var logger = Assembly.Load("NHibernate").GetType(loggerName);
-
-                if (loggerName == "NHibernate.SQL")
-                    logger = Assembly.Load("NHibernate").GetType("NHibernate.AdoNet.Util.SqlStatementLogger");
-
-                if(logger == null) continue;
-                var field = logger.GetField("log", BindingFlags.Static | BindingFlags.NonPublic);
-                
-                field.SetValue(null, _zmqLoggerFactory.LoggerFor(loggerName));
+                field.SetValue(null, _zmqLoggerFactory.LoggerFor(field.DeclaringType.ToString()));
             }
         }
     }
